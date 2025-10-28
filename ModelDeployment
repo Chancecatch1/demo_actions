@@ -1,0 +1,81 @@
+'''Rest of the part after model dev is here:
+
+Once the model object is ready, we will move into a Python script to create the API. But first, we need to install a few packages used for deployment.
+
+FastAPI is a full-stack framework that offers everything you need to build your API. On the other hand, Flask is a micro framework that doesn't provide all the features that FastAPI does. However, Flask is useful when you want to prototype an idea quickly or build a simple web application.
+
+pip install fastapi uvicorn
+
+
+We would not do it in the notebook but in an IDE such as Visual Studio Code. In your preferred IDE, create a Python script called app.py and put the code below into the script.'''
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+import joblib
+import numpy as np
+
+# Load the logistic regression model pipeline
+model = joblib.load('logreg_model.joblib')
+
+# Define the input data for model
+class CustomerData(BaseModel):
+    tenure: int
+    InternetService: str
+    OnlineSecurity: str
+    TechSupport: str
+    Contract: str
+    PaymentMethod: str
+
+# Create FastAPI app
+app = FastAPI()
+
+# Define prediction endpoint
+@app.post("/predict")
+def predict(data: CustomerData):
+    # Convert input data to a dictionary and then to a DataFrame
+    input_data = {
+        'tenure': [data.tenure],
+        'InternetService': [data.InternetService],
+        'OnlineSecurity': [data.OnlineSecurity],
+        'TechSupport': [data.TechSupport],
+        'Contract': [data.Contract],
+        'PaymentMethod': [data.PaymentMethod]
+    }
+   
+    import pandas as pd
+    input_df = pd.DataFrame(input_data)
+   
+    # Make a prediction
+    prediction = model.predict(input_df)
+   
+    # Return the prediction
+    return {"prediction": int(prediction[0])}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+ 
+
+'''In your command prompt or terminal, run the following code.
+
+uvicorn app:app --reload
+ 
+With the code above, we already have an API to accept data and create predictions. Let’s try it out with the following code in the new terminal.
+
+curl -X POST "http://127.0.0.1:8000/predict" -H "Content-Type: application/json" -d "{\"tenure\": 72, \"InternetService\": \"Fiber optic\", \"OnlineSecurity\": \"Yes\", \"TechSupport\": \"Yes\", \"Contract\": \"Two year\", \"PaymentMethod\": \"Credit card (automatic)\"}"
+ 
+
+Output>>
+{"prediction":0}
+ 
+
+As you can see, the API result is a dictionary with prediction 0 (Not-Churn). You can tweak the code even further to get the desired result.
+
+Congratulation. You have developed your machine learning model and successfully deployed it in the API.
+
+
+2) Another option is to deploy it on Huggingface spaces as shown here:
+https://www.kdnuggets.com/deploying-your-first-machine-learning-model
+
+3) Deploy it on AWS:
+https://www.kdnuggets.com/deploying-your-ml-model-to-production-in-the-cloud'''
